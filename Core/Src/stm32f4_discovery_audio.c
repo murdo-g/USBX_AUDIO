@@ -436,14 +436,14 @@ void BSP_AUDIO_OUT_SetFrequency(uint32_t AudioFreq)
   * @brief  Tx Transfer completed callbacks.
   * @param  hi2s: I2S handle
   */
-void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
-{
-  if(hi2s->Instance == I2S3)
-  {
-    /* Call the user function which will manage directly transfer complete */  
-    BSP_AUDIO_OUT_TransferComplete_CallBack();       
-  }
-}
+//void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s)
+//{
+//  if(hi2s->Instance == I2S3)
+//  {
+//    /* Call the user function which will manage directly transfer complete */
+//    BSP_AUDIO_OUT_TransferComplete_CallBack();
+//  }
+//}
 
 /**
   * @brief  Tx Half Transfer completed callbacks.

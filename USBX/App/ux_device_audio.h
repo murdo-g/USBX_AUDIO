@@ -39,7 +39,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-#define AUDIO_TOTAL_BUF_SIZE   192*8
+#define AUDIO_TOTAL_BUF_SIZE   192*24
 
   
 typedef enum

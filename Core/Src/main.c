@@ -27,6 +27,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "cs43l22.h" /* Audio DAC driver */
+#include "stm32f4_discovery.h"
+#include <math.h> /* for sin() */
 
 /* USER CODE END Includes */
 
@@ -37,6 +40,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define BUF_SIZE 96*10
+#define PACKET_SIZE 96
+#define SINE_TABLE_SZ 480
 
 /* USER CODE END PD */
 
@@ -48,7 +54,13 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
-
+int16_t sine_table[SINE_TABLE_SZ];
+uint32_t current_sample = 0;
+int16_t tx_buf[BUF_SIZE];
+uint32_t tx_buf_w_index = 0;
+uint32_t sine_r_index = 0;
+volatile uint8_t tx_cplt = 1;
+uint8_t play_enable = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -59,7 +71,10 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+void HAL_I2S_TxCpltCallback(I2S_HandleTypeDef *hi2s) {
+//	tx_buf_ptr = &tx_buf[BUF_SIZE/2];
+	tx_cplt = 1;
+}
 /* USER CODE END 0 */
 
 /**
@@ -95,6 +110,21 @@ int main(void)
   MX_I2S3_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+  /* CODEC INIT ========= */
+
+  if(((cs43l22_ReadID(0x94)) & CS43L22_ID_MASK) == CS43L22_ID)
+  {
+	/* Initialize the audio driver structure */
+	  cs43l22_Init(0x94, OUTPUT_DEVICE_HEADPHONE, 70, AUDIO_FREQUENCY_48K);
+	    HAL_Delay(100);
+	    cs43l22_Play(0x94, NULL, 0);
+  }
+
+
+  for(size_t i=0; i<SINE_TABLE_SZ; i++) {
+	  sine_table[i] = 5000.f * sin(2.f * M_PI * ((float)i/(float)SINE_TABLE_SZ) );
+  }
+
 
   /* USER CODE END 2 */
 
@@ -103,12 +133,28 @@ int main(void)
   /* We should never get here as control is now taken by the scheduler */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
-  }
+//  while (1)
+//  {
+//    /* USER CODE END WHILE */
+//    /* USER CODE BEGIN 3 */
+//	  /* Fill next packet */
+//		  tx_buf_w_index += PACKET_SIZE;
+//		  if( tx_buf_w_index >= BUF_SIZE ) tx_buf_w_index = 0;
+//		  for(int i=0; i<PACKET_SIZE*2; i+=2) {
+//			  tx_buf[tx_buf_w_index + i] = sine_table[ sine_r_index ];
+//			  tx_buf[tx_buf_w_index + i + 1] = sine_table[ sine_r_index ];
+//			  sine_r_index++;
+//			  if( sine_r_index >= SINE_TABLE_SZ ) {
+//				  sine_r_index = 0;
+//			  }
+//		  }
+//		  if( play_enable || tx_buf_w_index >= BUF_SIZE/2 ) {
+//			  play_enable = 1;
+//			  tx_cplt = 0;
+//			  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)tx_buf, BUF_SIZE);
+//		  }
+//	  }
+//  }
   /* USER CODE END 3 */
 }
 

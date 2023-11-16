@@ -54,6 +54,8 @@ extern TX_QUEUE                         ux_app_MsgQueue;
 
 extern   UX_DEVICE_CLASS_AUDIO20_CONTROL         audio_control[1];
 extern   UX_DEVICE_CLASS_AUDIO20_CONTROL_GROUP   group;
+extern I2S_HandleTypeDef hi2s3;
+
 
 /* Double BUFFER for Output Audio stream */
 /* as Buffer location should be aligned to cache line size (32 bytes) */
@@ -65,6 +67,7 @@ ALIGN_32BYTES (static AUDIO_OUT_BufferTypeDef  BufferCtl);
 #endif
 static int play_count = 0;
 static AUDIO_OUT_BufferTypeDef  __attribute__ ((aligned (32))) BufferCtl;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -108,30 +111,33 @@ VOID usbx_audio_play_app_thread(ULONG arg)
   while (1)
   {
 //    /* Wait for a buffer of audio to be  */
-//    if (tx_queue_receive(&ux_app_MsgQueue, &BufferCtl.state, TX_WAIT_FOREVER)!= TX_SUCCESS)
-//    {
-//      Error_Handler();
-//    }
+    if (tx_queue_receive(&ux_app_MsgQueue, &BufferCtl.state, TX_WAIT_FOREVER)!= TX_SUCCESS)
+    {
+      Error_Handler();
+    }
       HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
-      tx_thread_sleep(20);
 
-//    switch(BufferCtl.state)
-//    {
-//
-//      case PLAY_BUFFER_OFFSET_NONE:
-//        /*DMA stream from output double buffer to codec in Circular mode launch*/
+    switch(BufferCtl.state)
+    {
+
+      case PLAY_BUFFER_OFFSET_NONE:
+        /*DMA stream from output double buffer to codec in Circular mode launch*/
 //        if (BSP_AUDIO_OUT_Play((uint16_t*)&BufferCtl.buff[0],
 //                               AUDIO_TOTAL_BUF_SIZE) != AUDIO_OK)
 //        {
 //          Error_Handler();
 //        }
-//
-//        break;
-//
-//    default:
-//      tx_thread_sleep(1);
-//      break;
-//    }
+		  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)&BufferCtl.buff[0], AUDIO_TOTAL_BUF_SIZE/2);
+//		  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)testbuf, AUDIO_TOTAL_BUF_SIZE);
+
+
+
+        break;
+
+    default:
+      tx_thread_sleep(1);
+      break;
+    }
   }
 }
 
@@ -202,7 +208,7 @@ VOID Audio_ReadChange(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG alternate_sett
   ux_device_class_audio_reception_start(stream);
 }
 
-VOID __attribute__((optimize("O0"))) Audio_ReadDone(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG length)
+VOID  Audio_ReadDone(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG length)
 {
 
   UCHAR         *frame_buffer;
@@ -219,33 +225,33 @@ VOID __attribute__((optimize("O0"))) Audio_ReadDone(UX_DEVICE_CLASS_AUDIO_STREAM
     {
       /* All buffers are full: roll back */
       BufferCtl.wr_ptr = 0U;
-
       if (BufferCtl.state == PLAY_BUFFER_OFFSET_UNKNOWN)
-      {
+			{
 
-        /* Start BSP play */
-        BufferCtl.state = PLAY_BUFFER_OFFSET_NONE;
+			  /* Start BSP play */
+			  BufferCtl.state = PLAY_BUFFER_OFFSET_NONE;
 
-        /* Put a message queue  */
-        if(tx_queue_send(&ux_app_MsgQueue, &BufferCtl.state, TX_NO_WAIT) != TX_SUCCESS)
-        {
-          Error_Handler();
-        }
+			  /* Put a message queue  */
+			  if(tx_queue_send(&ux_app_MsgQueue, &BufferCtl.state, TX_NO_WAIT) != TX_SUCCESS)
+			  {
+				Error_Handler();
+			  }
 
-      }
+
     }
 
     if (BufferCtl.rd_enable == 0U)
     {
       if (BufferCtl.wr_ptr == (AUDIO_TOTAL_BUF_SIZE / 2U))
       {
-        BufferCtl.rd_enable = 1U;
+    	  BufferCtl.rd_enable = 1U;
+
+		  }
       }
     }
 
-    ux_utility_memory_copy(&BufferCtl.buff[BufferCtl.wr_ptr], frame_buffer, frame_length);
+    ux_utility_memory_copy((uint8_t*)&BufferCtl.buff[BufferCtl.wr_ptr], frame_buffer, frame_length);
 
-    play_count++;
   }
   /* Re-free the first audio input frame for transfer.  */
   ux_device_class_audio_read_frame_free(stream);

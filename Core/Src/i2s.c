@@ -46,7 +46,7 @@ void MX_I2S3_Init(void)
   hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_48K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
   hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
-  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
+  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
   if (HAL_I2S_Init(&hi2s3) != HAL_OK)
   {
     Error_Handler();
@@ -87,6 +87,7 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* i2sHandle)
     PA4     ------> I2S3_WS
     PC7     ------> I2S3_MCK
     PC10     ------> I2S3_CK
+    PC11     ------> I2S3_ext_SD
     PC12     ------> I2S3_SD
     */
     GPIO_InitStruct.Pin = I2S3_WS_Pin;
@@ -101,6 +102,13 @@ void HAL_I2S_MspInit(I2S_HandleTypeDef* i2sHandle)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_11;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    GPIO_InitStruct.Alternate = GPIO_AF5_I2S3ext;
     HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     /* I2S3 DMA Init */
@@ -146,11 +154,12 @@ void HAL_I2S_MspDeInit(I2S_HandleTypeDef* i2sHandle)
     PA4     ------> I2S3_WS
     PC7     ------> I2S3_MCK
     PC10     ------> I2S3_CK
+    PC11     ------> I2S3_ext_SD
     PC12     ------> I2S3_SD
     */
     HAL_GPIO_DeInit(I2S3_WS_GPIO_Port, I2S3_WS_Pin);
 
-    HAL_GPIO_DeInit(GPIOC, I2S3_MCK_Pin|I2S3_SCK_Pin|I2S3_SD_Pin);
+    HAL_GPIO_DeInit(GPIOC, I2S3_MCK_Pin|I2S3_SCK_Pin|GPIO_PIN_11|I2S3_SD_Pin);
 
     /* I2S3 DMA DeInit */
     HAL_DMA_DeInit(i2sHandle->hdmatx);
