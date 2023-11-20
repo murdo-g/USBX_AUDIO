@@ -65,7 +65,6 @@ extern I2S_HandleTypeDef hi2s3;
 ALIGN_32BYTES (static AUDIO_OUT_BufferTypeDef  BufferCtl);
 
 #endif
-static int play_count = 0;
 static AUDIO_OUT_BufferTypeDef  __attribute__ ((aligned (32))) BufferCtl;
 
 /* USER CODE END PV */
@@ -115,20 +114,13 @@ VOID usbx_audio_play_app_thread(ULONG arg)
     {
       Error_Handler();
     }
-      HAL_GPIO_TogglePin(LD3_GPIO_Port, LD3_Pin);
 
     switch(BufferCtl.state)
     {
 
       case PLAY_BUFFER_OFFSET_NONE:
         /*DMA stream from output double buffer to codec in Circular mode launch*/
-//        if (BSP_AUDIO_OUT_Play((uint16_t*)&BufferCtl.buff[0],
-//                               AUDIO_TOTAL_BUF_SIZE) != AUDIO_OK)
-//        {
-//          Error_Handler();
-//        }
 		  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)&BufferCtl.buff[0], AUDIO_TOTAL_BUF_SIZE/2);
-//		  HAL_I2S_Transmit_DMA(&hi2s3, (uint16_t*)testbuf, AUDIO_TOTAL_BUF_SIZE);
 
 
 
@@ -199,13 +191,14 @@ VOID Audio_ReadChange(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG alternate_sett
   /* Do nothing if alternate setting is 0 (stream closed).  */
   if (alternate_setting == 0)
   {    
-    return;
+		HAL_GPIO_WritePin(LD3_GPIO_Port, LD3_Pin, alternate_setting);
+    	HAL_GPIO_WritePin(LD4_GPIO_Port, LD4_Pin, 0);
+    	return;
   }
-
   BufferCtl.state = PLAY_BUFFER_OFFSET_UNKNOWN;
-  
   /* Start reception (stream opened).  */
-  ux_device_class_audio_reception_start(stream);
+  if(ux_device_class_audio_reception_start(stream) != UX_SUCCESS) {
+  }
 }
 
 VOID  Audio_ReadDone(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG length)
@@ -213,7 +206,8 @@ VOID  Audio_ReadDone(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG length)
 
   UCHAR         *frame_buffer;
   ULONG         frame_length;
-  
+
+
   /* Get access to first audio input frame.  */
   ux_device_class_audio_read_frame_get(stream, &frame_buffer, &frame_length);
 
@@ -256,29 +250,6 @@ VOID  Audio_ReadDone(UX_DEVICE_CLASS_AUDIO_STREAM *stream, ULONG length)
   /* Re-free the first audio input frame for transfer.  */
   ux_device_class_audio_read_frame_free(stream);
 }
-
-//static void Audio_ReadDone (UX_DEVICE_CLASS_AUDIO_STREAM * p_stream, ULONG actual_length)
-//{
-//    UINT    ux_err;
-//    UCHAR * p_buffer;
-//    ULONG   length;
-//    UINT    i;
-//    FSP_PARAMETER_NOT_USED(actual_length);
-//    if (USB_APL_ON == g_read_alternate_setting)
-//    {
-//        ux_err = ux_device_class_audio_read_frame_get(p_stream, &p_buffer, &length);
-//        if (UX_SUCCESS == ux_err)
-//        {
-//            for (i = 0; i < length; i++)
-//            {
-//                g_read_buf[g_read_wp][i] = *(p_buffer + i);
-//            }
-//            g_read_wp++;
-//            g_read_wp %= NUM_OF_FRAME;
-//            ux_device_class_audio_read_frame_free(p_stream);
-//        }
-//    }
-//}
 
 /* USER CODE END 0 */
 

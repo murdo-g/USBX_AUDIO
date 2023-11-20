@@ -44,7 +44,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define USBX_APP_STACK_SIZE             1024
+#define USBX_APP_STACK_SIZE             2048
 #define USBX_MEMORY_SIZE                (40 * 1024)
 #define FRAME_BUFFER_NUNMBER            2
 #define AUDIO_OUT_INSTANCE              1
@@ -75,6 +75,14 @@ TX_THREAD       ux_app_thread;
 TX_THREAD       ux_audio_play_thread;
 TX_QUEUE        ux_app_MsgQueue;
 
+ULONG device_framework_fs_length;
+ULONG string_framework_length;
+ULONG languge_id_framework_length;
+UCHAR *device_framework_full_speed;
+UCHAR *string_framework;
+UCHAR *language_id_framework;
+CHAR  *pointer;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -96,15 +104,6 @@ UINT MX_USBX_Device_Init(VOID *memory_ptr)
   /* USER CODE END MX_USBX_Device_MEM_POOL */
 
   /* USER CODE BEGIN MX_USBX_Device_Init */
-//  ULONG device_framework_hs_length;
-  ULONG device_framework_fs_length;
-  ULONG string_framework_length;
-  ULONG languge_id_framework_length;
-//  UCHAR *device_framework_high_speed;
-  UCHAR *device_framework_full_speed;
-  UCHAR *string_framework;
-  UCHAR *language_id_framework;
-  CHAR  *pointer;
 
   /* Allocate the USBX_MEMORY_SIZE. */
   tx_byte_allocate(byte_pool, (VOID **) &pointer,
@@ -117,10 +116,6 @@ UINT MX_USBX_Device_Init(VOID *memory_ptr)
 	  Error_Handler();
   }
 
-//  /* Get_Device_Framework_High_Speed and get the length */
-//  device_framework_high_speed = USBD_Get_Device_Framework_Speed(USBD_HIGH_SPEED,
-//                                                                &device_framework_hs_length);
-
   /* Get_Device_Framework_Full_Speed and get the length */
   device_framework_full_speed = USBD_Get_Device_Framework_Speed(USBD_FULL_SPEED,
                                                                 &device_framework_fs_length);
@@ -131,20 +126,7 @@ UINT MX_USBX_Device_Init(VOID *memory_ptr)
   /* Get_Language_Id_Framework and get the length */
   language_id_framework = USBD_Get_Language_Id_Framework(&languge_id_framework_length);
 
-  /* The code below is required for installing the device portion of USBX.
-  In this application */
-  if (ux_device_stack_initialize(NULL,
-                                 0,
-                                 device_framework_full_speed,
-                                 device_framework_fs_length,
-                                 string_framework,
-                                 string_framework_length,
-                                 language_id_framework,
-                                 languge_id_framework_length,
-                                 UX_NULL) != UX_SUCCESS)
-  {
-	  Error_Handler();
-  }
+
 
   /* Set the parameters for Audio streams.  */
   audio_stream_parameter[0].ux_device_class_audio_stream_parameter_callbacks.ux_device_class_audio_stream_change     = Audio_ReadChange;
@@ -175,12 +157,7 @@ UINT MX_USBX_Device_Init(VOID *memory_ptr)
 	group.ux_device_class_audio20_control_group_controls_nb = 1;
 	group.ux_device_class_audio20_control_group_controls    = audio_control;
 
-  /* Initialize the device Audio class. This class owns interfaces starting with 0. */
-  if( ux_device_stack_class_register(_ux_system_slave_class_audio_name, ux_device_class_audio_entry,
-                                     1, 0, &audio_parameter) != UX_SUCCESS)
-  {
-    Error_Handler();
-  }
+
 
   /* Allocate the stack for main_usbx_app_thread_entry.  */
   if (tx_byte_allocate(byte_pool, (VOID **) &pointer, USBX_APP_STACK_SIZE, TX_NO_WAIT) != TX_SUCCESS)
@@ -249,6 +226,27 @@ void usbx_app_thread_entry(ULONG arg)
 //  {
 //    Error_Handler();
 //  }
+	  /* The code below is required for installing the device portion of USBX.
+	  In this application */
+	  if (ux_device_stack_initialize(NULL,
+	                                 0,
+	                                 device_framework_full_speed,
+	                                 device_framework_fs_length,
+	                                 string_framework,
+	                                 string_framework_length,
+	                                 language_id_framework,
+	                                 languge_id_framework_length,
+	                                 UX_NULL) != UX_SUCCESS)
+	  {
+		  Error_Handler();
+	  }
+
+	  /* Initialize the device Audio class. This class owns interfaces starting with 0. */
+	    if( ux_device_stack_class_register(_ux_system_slave_class_audio_name, ux_device_class_audio_entry,
+	                                       1, 0, &audio_parameter) != UX_SUCCESS)
+	    {
+	      Error_Handler();
+	    }
 
   /* Initialization of USB device */
   MX_USB_Device_Init();
@@ -274,9 +272,9 @@ void MX_USB_Device_Init(void)
 //	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 0, 0x40);
 //	  /* Set Tx FIFO 1 */
 //	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 1, 0x100);
-	  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_FS, 0xD0);
-	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 1, 0x40);
-	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 0, 0x80);
+	  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_FS, 0xf0);
+	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 1, 0x10);
+	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 0, 0x10);
 
 //	  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_FS, 0x80);
 //	  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_FS, 0, 0x40);

@@ -40,9 +40,9 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* define the size of static threadX byte memory pools */
-#define TX_APP_MEM_POOL_SIZE                     2048
+#define TX_APP_MEM_POOL_SIZE                     8192
 
-#define UX_DEVICE_APP_MEM_POOL_SIZE              96 * 1024
+#define UX_DEVICE_APP_MEM_POOL_SIZE              52 * 1024
 
 /* USER CODE BEGIN EC */
 

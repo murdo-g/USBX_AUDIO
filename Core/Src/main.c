@@ -135,8 +135,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 //  while (1)
 //  {
-//    /* USER CODE END WHILE */
-//    /* USER CODE BEGIN 3 */
+    /* USER CODE END WHILE */
+
+    /* USER CODE BEGIN 3 */
 //	  /* Fill next packet */
 //		  tx_buf_w_index += PACKET_SIZE;
 //		  if( tx_buf_w_index >= BUF_SIZE ) tx_buf_w_index = 0;
